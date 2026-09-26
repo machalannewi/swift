@@ -66,7 +66,7 @@ NEXT_PUBLIC_PUSHER_KEY=
 NEXT_PUBLIC_PUSHER_CLUSTER=
 ```
 
-After setting `DATABASE_URL`, create the tables with `npx prisma migrate deploy`.
+After setting `DATABASE_URL`, create the tables with `npx prisma migrate deploy`. This also adds starting fare rates for each vehicle type, which you can change later in `/admin/pricing`.
 
 To enable "Continue with Google", turn on the Google social connection in your Clerk dashboard.
 
@@ -100,10 +100,10 @@ swift/
 │   │   ├── ui/                # shadcn/ui primitives
 │   │   └── *.tsx              # Shared components (Button, Tag, Pointer, ...)
 │   ├── hooks/                 # useMapboxAutocomplete, useMapboxRoute, useRideHistory
-│   ├── utils/                 # Mapbox helpers, car tiers and pricing data
+│   ├── utils/                 # Mapbox helpers, car tiers, fare formula (pricing.ts)
 │   ├── types/                 # Shared TypeScript types
 │   ├── assets/images/         # Logo and landing page images
-│   ├── lib/                   # Server: auth/roles, Prisma, Pusher, ride lifecycle, analytics
+│   ├── lib/                   # Server: auth/roles, Prisma, Pusher, ride lifecycle, pricing, analytics
 │   └── proxy.ts               # Clerk middleware - protects /dashboard and /driver
 ├── next.config.ts
 ├── tailwind.config.ts
@@ -173,7 +173,7 @@ Admin pages update live: every ride and driver change is broadcast on a private 
 
 ## How a ride works
 
-1. The rider requests a ride. The server recalculates the route and fare, saves the ride as `REQUESTED`, and pushes it to approved, online, idle drivers of that car type within 15 km.
+1. The rider picks a vehicle type and sees an upfront price based on the current rates and any surge. On request, the server recalculates the route and fare itself, locks the price (with its breakdown) on the ride, saves it as `REQUESTED`, and pushes it to approved, online, idle drivers of that car type within 15 km.
 2. The first driver to accept wins (the update is atomic, so two drivers can't take the same ride). Other drivers see the request disappear.
 3. The driver moves the ride through `ACCEPTED → ARRIVED → IN_PROGRESS → COMPLETED`. The rider sees each step and the driver's live location on the map.
 4. Either side can cancel before the trip starts. Requests nobody accepts within 3 minutes are cancelled automatically.
