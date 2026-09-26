@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { ACTIVE_STATUSES } from "@/lib/rides";
+import { ACTIVE_STATUSES, rideInclude } from "@/lib/rides";
 
 /** Days and "today" are counted in the platform's local time. */
 export const TIMEZONE = "Africa/Lagos";
@@ -80,13 +80,11 @@ export async function getOverview() {
         prisma.user.count({ where: { role: "DRIVER" } }),
     ]);
 
-    const recentEvents = await prisma.rideEvent.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 12,
-        include: {
-            actor: { select: { name: true, role: true } },
-            ride: { select: { id: true, pickupName: true, dropoffName: true, fare: true } },
-        },
+    // One entry per trip, most recently changed first.
+    const recentTrips = await prisma.ride.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+        include: rideInclude,
     });
 
     return {
@@ -100,18 +98,7 @@ export async function getOverview() {
         daily: fillDays(dailyRows, 14),
         cancellations,
         live: { activeRides, onlineDrivers, pendingDrivers, riders, drivers },
-        recentEvents: recentEvents.map((e) => ({
-            id: e.id,
-            status: e.status,
-            createdAt: e.createdAt.toISOString(),
-            actorName: e.actor?.name ?? null,
-            actorRole: e.actor?.role ?? null,
-            rideId: e.ride.id,
-            pickup: e.ride.pickupName,
-            dropoff: e.ride.dropoffName,
-            fare: e.ride.fare,
-            reason: (e.data as { reason?: string } | null)?.reason ?? null,
-        })),
+        recentTrips,
     };
 }
 

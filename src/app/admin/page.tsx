@@ -1,20 +1,12 @@
 import Link from "next/link";
-import { AdminHeader, Card, StatTile, StatusPill, formatDuration, timeAgo } from "@/components/admin/ui";
+import { AdminHeader, Card, StatTile, formatDuration, timeAgo } from "@/components/admin/ui";
 import RidesChart from "@/components/admin/RidesChart";
 import AdminLiveMap from "@/components/admin/AdminLiveMap";
+import TripProgress from "@/components/admin/TripProgress";
 import { getOverview } from "@/lib/analytics";
 import { formatNaira } from "@/utils/CarListData";
 
 export const dynamic = "force-dynamic";
-
-const eventVerb: Record<string, string> = {
-    REQUESTED: "requested a ride",
-    ACCEPTED: "accepted a ride",
-    ARRIVED: "arrived at pickup",
-    IN_PROGRESS: "started a trip",
-    COMPLETED: "completed a trip",
-    CANCELLED: "cancelled a ride",
-};
 
 export default async function AdminOverviewPage() {
     const o = await getOverview();
@@ -115,32 +107,36 @@ export default async function AdminOverviewPage() {
                     </Link>
                 }
             >
-                {o.recentEvents.length === 0 ? (
+                {o.recentTrips.length === 0 ? (
                     <p className="text-white/50">No ride activity yet.</p>
                 ) : (
                     <ul className="divide-y divide-white/5">
-                        {o.recentEvents.map((e) => (
-                            <li key={e.id} className="py-3 flex items-center gap-4">
-                                <StatusPill status={e.status} className="w-24 justify-center" />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm">
-                                        <span className="font-medium">
-                                            {e.reason === "timeout"
-                                                ? "System"
-                                                : (e.actorName ?? e.actorRole?.toLowerCase() ?? "Someone")}
-                                        </span>{" "}
-                                        <span className="text-white/60">
-                                            {e.reason === "timeout" ? "expired an unanswered request" : eventVerb[e.status]}
-                                        </span>
-                                    </p>
-                                    <p className="text-xs text-white/40 truncate">
-                                        {e.pickup} → {e.dropoff}
-                                    </p>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                    <p className="text-sm tabular-nums">{formatNaira(e.fare)}</p>
-                                    <p className="text-xs text-white/40">{timeAgo(e.createdAt)}</p>
-                                </div>
+                        {o.recentTrips.map((ride) => (
+                            <li key={ride.id}>
+                                <Link
+                                    href={`/admin/rides?q=${ride.id}`}
+                                    className="py-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-6 group"
+                                >
+                                    <div className="md:w-56 flex-shrink-0">
+                                        <TripProgress ride={ride} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm truncate">
+                                            <span className="font-medium">{ride.rider.name ?? "Rider"}</span>
+                                            <span className="text-white/40"> with </span>
+                                            <span className="font-medium">
+                                                {ride.driver?.name ?? <span className="text-white/40">no driver yet</span>}
+                                            </span>
+                                        </p>
+                                        <p className="text-xs text-white/40 truncate group-hover:text-white/60 transition">
+                                            {ride.pickupName} → {ride.dropoffName}
+                                        </p>
+                                    </div>
+                                    <div className="flex md:flex-col items-center md:items-end gap-3 md:gap-0 flex-shrink-0">
+                                        <p className="text-sm tabular-nums">{formatNaira(ride.fare)}</p>
+                                        <p className="text-xs text-white/40">updated {timeAgo(ride.updatedAt)}</p>
+                                    </div>
+                                </Link>
                             </li>
                         ))}
                     </ul>

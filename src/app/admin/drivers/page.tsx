@@ -1,6 +1,8 @@
 import { Phone } from "lucide-react";
 import { AdminHeader, Card, FilterTabs, StatusPill, timeAgo } from "@/components/admin/ui";
+import Link from "next/link";
 import AdminActionButton from "@/components/admin/AdminActionButton";
+import { DRIVER_ACTIONS } from "@/components/admin/driverActions";
 import { prisma } from "@/lib/prisma";
 import { formatNaira, getCar } from "@/utils/CarListData";
 import type { DriverStatus } from "@/generated/prisma/client";
@@ -13,22 +15,6 @@ const TABS: { key: DriverStatus; label: string }[] = [
     { key: "SUSPENDED", label: "Suspended" },
     { key: "REJECTED", label: "Rejected" },
 ];
-
-// What an admin can do from each state.
-const ACTIONS: Record<
-    DriverStatus,
-    { to: DriverStatus; label: string; variant: "primary" | "secondary" | "danger"; confirm?: string }[]
-> = {
-    PENDING: [
-        { to: "APPROVED", label: "Approve", variant: "primary" },
-        { to: "REJECTED", label: "Reject", variant: "danger", confirm: "Reject this driver application?" },
-    ],
-    APPROVED: [
-        { to: "SUSPENDED", label: "Suspend", variant: "danger", confirm: "Suspend this driver? They'll be taken offline immediately." },
-    ],
-    SUSPENDED: [{ to: "APPROVED", label: "Reinstate", variant: "primary" }],
-    REJECTED: [{ to: "APPROVED", label: "Approve", variant: "secondary" }],
-};
 
 export default async function AdminDriversPage({
     searchParams,
@@ -91,7 +77,12 @@ export default async function AdminDriversPage({
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="text-lg font-medium truncate">{d.user.name ?? "Unnamed driver"}</p>
+                                        <Link
+                                            href={`/admin/drivers/${d.userId}`}
+                                            className="text-lg font-medium truncate hover:text-lime-400 transition"
+                                        >
+                                            {d.user.name ?? "Unnamed driver"} →
+                                        </Link>
                                         <StatusPill status={d.status} />
                                         {d.status === "APPROVED" && d.isOnline && (
                                             <span className="inline-flex items-center gap-1.5 text-xs text-lime-400">
@@ -102,7 +93,7 @@ export default async function AdminDriversPage({
                                     <p className="text-sm text-white/50 truncate">{d.user.email}</p>
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
-                                    {ACTIONS[d.status].map((a) => (
+                                    {DRIVER_ACTIONS[d.status].map((a) => (
                                         <AdminActionButton
                                             key={a.to}
                                             url={`/api/admin/drivers/${d.userId}/status`}
