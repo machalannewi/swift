@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const isRiderRoute = createRouteMatcher(['/dashboard(.*)'])
+const isRiderRoute = createRouteMatcher(['/dashboard(.*)', '/admin(.*)'])
 const isDriverAuthRoute = createRouteMatcher(['/driver/sign-in(.*)', '/driver/sign-up(.*)'])
 const isDriverRoute = createRouteMatcher(['/driver(.*)'])
 

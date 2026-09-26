@@ -2,6 +2,8 @@ import { handle, HttpError, requireApprovedDriver } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ACTIVE_STATUSES } from "@/lib/rides";
 import { readJson, requireCoords } from "@/lib/validate";
+import { publish } from "@/lib/pusher-server";
+import { channels, events } from "@/lib/realtime";
 
 // Driver goes online (with their position) or offline.
 export const POST = handle(async (req: Request) => {
@@ -28,6 +30,11 @@ export const POST = handle(async (req: Request) => {
                 : {}),
         },
         select: { isOnline: true },
+    });
+
+    await publish(channels.admin, events.driverUpdated, {
+        userId: driver.id,
+        isOnline: profile.isOnline,
     });
 
     return Response.json(profile);

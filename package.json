@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "approve-driver": "tsx scripts/approve-driver.ts"
+    "approve-driver": "tsx scripts/approve-driver.ts",
+    "make-admin": "tsx scripts/make-admin.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.0",

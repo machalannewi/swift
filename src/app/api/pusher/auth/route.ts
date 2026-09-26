@@ -14,6 +14,8 @@ export const POST = handle(async (req: Request) => {
 
     if (channel === channels.user(user.id)) {
         allowed = true;
+    } else if (channel === channels.admin) {
+        allowed = user.role === "ADMIN";
     } else if (channel.startsWith("private-drivers-")) {
         const profile = user.driverProfile;
         allowed =

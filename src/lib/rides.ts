@@ -146,7 +146,11 @@ export async function transitionRide(opts: {
 
 /** Pushes the latest ride state to everyone watching it. */
 export async function broadcastRide(ride: RideWithPeople) {
-    await publish(channels.ride(ride.id), events.rideUpdated, serializeRide(ride));
+    await publish(
+        [channels.ride(ride.id), channels.admin],
+        events.rideUpdated,
+        serializeRide(ride),
+    );
 
     // Once a request is no longer open, pull it from other drivers' screens.
     if (ride.status !== "REQUESTED") {

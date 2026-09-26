@@ -51,6 +51,9 @@ export class HttpError extends Error {
 export async function requireUser(...roles: Role[]): Promise<CurrentUser> {
     const user = await getCurrentUser();
     if (!user) throw new HttpError(401, "Not signed in");
+    if (user.suspendedAt && user.role !== "ADMIN") {
+        throw new HttpError(403, "This account is suspended");
+    }
     if (roles.length && !roles.includes(user.role)) {
         throw new HttpError(403, "Not allowed");
     }

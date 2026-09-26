@@ -37,6 +37,7 @@ A ride-booking web app built with Next.js. Riders sign in, pick a pickup and dro
 | `npm run build` | Create a production build    |
 | `npm run start` | Serve the production build   |
 | `npm run lint`  | Run ESLint                   |
+| `npm run make-admin -- <email>` | Give an account admin access (`--remove` to revoke) |
 | `npm run approve-driver -- <email>` | Approve a driver application (lists pending drivers when run without an email) |
 
 ## Environment variables
@@ -124,6 +125,14 @@ swift/
 | `/driver`            | Go online, receive and run trips             | Driver |
 | `/driver/trips`      | Trip history and earnings                    | Driver |
 | `/driver/profile`    | Driver and vehicle details                   | Driver |
+| `/admin`             | Live KPIs, rides per day, service times, driver map, activity | Admin |
+| `/admin/rides`       | Rides in progress (stuck-trip alerts, cancel) and history | Admin |
+| `/admin/drivers`     | Approve, reject, suspend and reinstate drivers | Admin |
+| `/admin/riders`      | Search riders, see spend, suspend accounts   | Admin |
+
+## Admin panel
+
+Admin pages update live: every ride and driver change is broadcast on a private admin channel, and the open page re-renders with fresh data. To create the first admin, sign in once with the account (it can't be a driver account), then run `npm run make-admin -- you@example.com` and open `/admin`. Non-admins get a 404 there.
 
 ## How a ride works
 
@@ -132,10 +141,10 @@ swift/
 3. The driver moves the ride through `ACCEPTED → ARRIVED → IN_PROGRESS → COMPLETED`. The rider sees each step and the driver's live location on the map.
 4. Either side can cancel before the trip starts. Requests nobody accepts within 3 minutes are cancelled automatically.
 
-Every status change is recorded in the `RideEvent` table - the source for the upcoming admin analytics.
+Every status change is recorded in the `RideEvent` table, which powers the admin analytics.
 
 ## Notes
 
-- **Driver approval**: new drivers start as `PENDING`. Until the admin panel exists, approve them with `npm run approve-driver -- driver@example.com`.
+- **Driver approval**: new drivers start as `PENDING` and are approved in `/admin/drivers` (or with `npm run approve-driver -- driver@example.com`).
 - **Payments**: fares are paid in cash for now.
 - **Fares** are calculated as `baseFare + amountPerKm × distance`, using the car tiers in `src/utils/CarListData.ts`.

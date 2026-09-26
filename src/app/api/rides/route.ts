@@ -68,6 +68,7 @@ export const POST = handle(async (req: Request) => {
         events.rideOffered,
         payload,
     );
+    await publish(channels.admin, events.rideUpdated, payload);
 
     return Response.json({ ride: payload, driversNotified: drivers.length }, { status: 201 });
 });

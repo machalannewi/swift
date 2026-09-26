@@ -36,8 +36,10 @@ model User {
   email     String?
   name      String?
   imageUrl  String?
-  role      Role     @default(RIDER)
-  createdAt DateTime @default(now())
+  role        Role      @default(RIDER)
+  /// Set by an admin to block the account (riders and drivers alike).
+  suspendedAt DateTime?
+  createdAt   DateTime  @default(now())
   updatedAt DateTime @updatedAt
 
   driverProfile DriverProfile?
