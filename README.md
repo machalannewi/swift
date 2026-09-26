@@ -90,9 +90,11 @@ swift/
 │   │   │   ├── profile/       # Account details
 │   │   │   └── info/          # Help, safety and FAQs
 │   │   ├── driver/            # Driver sign-in/up, onboarding, live trips, earnings
-│   │   └── api/               # Ride, driver and Pusher auth endpoints
+│   │   ├── admin/             # Admin overview, rides, drivers (+ driver pages), riders
+│   │   └── api/               # Ride, driver, admin and Pusher auth endpoints
 │   ├── sections/              # Landing page sections (Hero, Features, FAQs, ...)
 │   ├── components/
+│   │   ├── admin/             # RidesChart, AdminLiveMap, RideRow, TripProgress, LiveRefresh
 │   │   ├── auth/              # AuthForm (shared sign-in/up logic) and AuthModal
 │   │   ├── dashboard/         # Navbar, BottomNavigation, Mapbox, SearchBox, CarOptions
 │   │   ├── ui/                # shadcn/ui primitives
@@ -101,7 +103,7 @@ swift/
 │   ├── utils/                 # Mapbox helpers, car tiers and pricing data
 │   ├── types/                 # Shared TypeScript types
 │   ├── assets/images/         # Logo and landing page images
-│   ├── lib/                   # Server: auth/roles, Prisma, Pusher, ride lifecycle
+│   ├── lib/                   # Server: auth/roles, Prisma, Pusher, ride lifecycle, analytics
 │   └── proxy.ts               # Clerk middleware - protects /dashboard and /driver
 ├── next.config.ts
 ├── tailwind.config.ts
@@ -125,14 +127,44 @@ swift/
 | `/driver`            | Go online, receive and run trips             | Driver |
 | `/driver/trips`      | Trip history and earnings                    | Driver |
 | `/driver/profile`    | Driver and vehicle details                   | Driver |
-| `/admin`             | Live KPIs, rides per day, service times, driver map, activity | Admin |
-| `/admin/rides`       | Rides in progress (stuck-trip alerts, cancel) and history | Admin |
-| `/admin/drivers`     | Approve, reject, suspend and reinstate drivers | Admin |
+| `/admin`             | Live KPIs, rides per day, service times, driver map, trip activity | Admin |
+| `/admin/rides`       | Rides in progress and searchable ride history | Admin |
+| `/admin/drivers`     | Driver approval queue and accounts           | Admin |
+| `/admin/drivers/[id]`| One driver: stats, current trip, trip history | Admin |
 | `/admin/riders`      | Search riders, see spend, suspend accounts   | Admin |
 
 ## Admin panel
 
-Admin pages update live: every ride and driver change is broadcast on a private admin channel, and the open page re-renders with fresh data. To create the first admin, sign in once with the account (it can't be a driver account), then run `npm run make-admin -- you@example.com` and open `/admin`. Non-admins get a 404 there.
+### Getting access
+
+Sign in once with the account you want to use (it can't be a driver account), then run `npm run make-admin -- you@example.com` and open `/admin`. Non-admins get a 404 there.
+
+### Pages
+
+- **Overview** (`/admin`)
+  - Right now: active rides, drivers online, pending approvals, total riders.
+  - Today: rides requested, completed, cancelled and gross fares.
+  - Rides per day for the last 14 days (completed vs cancelled), with hover details and a table view.
+  - Service times for the last 7 days: time to accept, pickup time, trip time and completion rate.
+  - Live map of online drivers (available vs on a trip) and a 30-day cancellation breakdown.
+  - Recent activity: one row per trip with a five-step progress indicator (requested → accepted → arrived → started → completed, or where it was cancelled). Click a row to open that trip.
+- **Rides** (`/admin/rides`)
+  - *In progress*: every unfinished ride, oldest first. Trips that look stuck are flagged (driver not arrived after 30 min, not started 15 min after arrival, or running far past the expected time). Any unfinished ride can be cancelled; the rider and driver are notified immediately.
+  - *History*: search by rider or driver name/email, plate number, pickup/dropoff place or ride ID, and filter by status (completed, cancelled) and period (today, 7 days, 30 days, all time). Filters combine and show as removable chips.
+- **Drivers** (`/admin/drivers`)
+  - Tabs for pending, approved, suspended and rejected drivers, with counts. Pending applications open by default when there are any.
+  - Each card shows vehicle, plate, licence, phone, trips and earnings, with approve / reject / suspend / reinstate actions.
+- **Driver page** (`/admin/drivers/[id]`)
+  - Profile, online status and last seen, contact and vehicle details, and account actions.
+  - Trips completed, distance, total and 7-day earnings, average pickup time, and driver cancellations (highlighted at 20%+ of accepted trips).
+  - Their current trip (with cancel) and last 15 trips, plus a link to search all of their trips on the Rides page.
+- **Riders** (`/admin/riders`): search by name or email, see completed and cancelled rides and total spend, and suspend or reinstate accounts.
+
+Driver and rider names link between these pages, so you can move from a trip to the people involved and back.
+
+### Live updates and suspensions
+
+Admin pages update live: every ride and driver change is broadcast on a private admin channel, and the open page re-renders with fresh data (the "Live" badge shows the connection). Approving or suspending someone also updates their own open screen immediately. A suspended account is blocked on the server; suspending a rider cancels any ride they're waiting for, and suspended drivers are taken offline.
 
 ## How a ride works
 
