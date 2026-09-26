@@ -1,10 +1,16 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
+const isRiderRoute = createRouteMatcher(['/dashboard(.*)'])
+const isDriverAuthRoute = createRouteMatcher(['/driver/sign-in(.*)', '/driver/sign-up(.*)'])
+const isDriverRoute = createRouteMatcher(['/driver(.*)'])
 
-const isProtectedRoute = createRouteMatcher(['/dashboard(.*)'])
-
+// Only checks that someone is signed in. Role checks (rider vs driver)
+// happen in the dashboard and driver layouts against the database.
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect()
+  if (isRiderRoute(req)) await auth.protect()
+  if (isDriverRoute(req) && !isDriverAuthRoute(req)) {
+    await auth.protect({ unauthenticatedUrl: new URL('/driver/sign-in', req.url).toString() })
+  }
 })
 
 export const config = {

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "approve-driver": "tsx scripts/approve-driver.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.0",
@@ -27,6 +29,8 @@
     "mapbox-gl": "^3.18.1",
     "next": "^16.1.2",
     "pg": "^8.17.2",
+    "pusher": "^5.3.4",
+    "pusher-js": "^8.6.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-map-gl": "^8.1.0",

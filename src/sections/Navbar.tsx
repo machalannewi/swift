@@ -13,6 +13,7 @@ const navLinks = [
     { label: "Features", href: "#features" },
     { label: "Safety", href: "#safety" },
     { label: "FAQs", href: "#faqs" },
+    { label: "Drive", href: "/driver/sign-up" },
 ];
 
 export default function Navbar() {

@@ -30,3 +30,17 @@ export async function reverseGeocode(
         return null;
     }
 }
+/** Builds a minimal MapboxFeature from a saved place so it can be drawn on the map. */
+export function placeToFeature(place: { name: string; lat: number; lng: number }): MapboxFeature {
+    return {
+        id: `${place.lat},${place.lng}`,
+        type: 'Feature',
+        place_type: ['address'],
+        relevance: 1,
+        properties: {},
+        text: place.name,
+        place_name: place.name,
+        center: [place.lng, place.lat],
+        geometry: { type: 'Point', coordinates: [place.lng, place.lat] },
+    };
+}

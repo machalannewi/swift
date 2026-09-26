@@ -3,16 +3,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
-import { dashboardLinks } from "./navLinks";
+import { isActivePath, navConfig, type NavVariant } from "./navLinks";
 
-export default function BottomNavigation() {
+export default function BottomNavigation({ variant = "rider" }: { variant?: NavVariant }) {
+    const { home, links } = navConfig[variant];
     const pathname = usePathname();
 
     return (
         <nav className="fixed bottom-4 left-4 right-4 z-30 lg:hidden">
             <div className="mx-auto max-w-md flex justify-around items-center p-2 border border-white/15 bg-neutral-950/80 backdrop-blur rounded-full">
-                {dashboardLinks.map((nav) => {
-                    const isActive = pathname === nav.href;
+                {links.map((nav) => {
+                    const isActive = isActivePath(pathname, nav.href, home);
                     const Icon = nav.icon;
 
                     return (

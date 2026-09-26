@@ -11,13 +11,15 @@ import ReactMapGL, {
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MapboxFeature } from "@/types/mapbox";
 import { RouteData } from "@/hooks/useMapboxRoute";
-import { Clock, Locate, Route } from "lucide-react";
+import { CarFront, Clock, Locate, Route } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface MapComponentProps {
     pickup: MapboxFeature | null;
     dropoff: MapboxFeature | null;
     route: RouteData | null;
+    /** Live position of the assigned (or current) driver. */
+    driverLocation?: { lat: number; lng: number } | null;
 }
 
 // Lagos - used until the rider's location is known
@@ -27,6 +29,7 @@ export default function MapComponent({
     pickup,
     dropoff,
     route,
+    driverLocation,
 }: MapComponentProps) {
     const mapRef = useRef<MapRef>(null);
     const [currentLocation, setCurrentLocation] = useState<
@@ -100,6 +103,19 @@ export default function MapComponent({
             );
         }
     }, [pickup, dropoff]);
+
+    // With no trip to frame, centre on the driver the first time we see them.
+    const hasCenteredOnDriver = useRef(false);
+    useEffect(() => {
+        if (!driverLocation || pickup || dropoff || hasCenteredOnDriver.current) return;
+        if (!mapRef.current) return;
+        hasCenteredOnDriver.current = true;
+        mapRef.current.flyTo({
+            center: [driverLocation.lng, driverLocation.lat],
+            zoom: 14,
+            duration: 1000,
+        });
+    }, [driverLocation, pickup, dropoff]);
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -177,6 +193,22 @@ export default function MapComponent({
                         <div className="relative size-4">
                             <div className="absolute inset-0 bg-lime-400 rounded-full animate-ping opacity-75" />
                             <div className="absolute inset-0 bg-lime-400 rounded-full border-2 border-neutral-950" />
+                        </div>
+                    </Marker>
+                )}
+
+                {/* Driver Marker */}
+                {driverLocation && (
+                    <Marker
+                        longitude={driverLocation.lng}
+                        latitude={driverLocation.lat}
+                        anchor="center"
+                    >
+                        <div className="relative size-10">
+                            <span className="absolute inset-0 rounded-full bg-lime-400/40 animate-ping" />
+                            <span className="relative size-10 rounded-full bg-lime-400 text-neutral-950 border-2 border-neutral-950 inline-flex items-center justify-center shadow-lg">
+                                <CarFront size={20} />
+                            </span>
                         </div>
                     </Marker>
                 )}

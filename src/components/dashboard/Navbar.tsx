@@ -9,9 +9,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
-import { dashboardLinks } from "./navLinks";
+import { isActivePath, navConfig, type NavVariant } from "./navLinks";
 
-export default function Navbar() {
+export default function Navbar({ variant = "rider" }: { variant?: NavVariant }) {
+    const { home, links } = navConfig[variant];
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -22,7 +23,7 @@ export default function Navbar() {
                 <div className="container max-w-7xl">
                     <div className="border border-white/15 bg-neutral-950/70 backdrop-blur rounded-full">
                         <div className="grid grid-cols-2 lg:grid-cols-3 p-2 px-4 md:pr-2 items-center">
-                            <Link href="/dashboard">
+                            <Link href={home}>
                                 <Image
                                     src={logoImage}
                                     alt="Swift logo"
@@ -31,8 +32,8 @@ export default function Navbar() {
                             </Link>
 
                             <nav className="hidden lg:flex justify-center gap-6 font-medium">
-                                {dashboardLinks.map((link) => {
-                                    const isActive = pathname === link.href;
+                                {links.map((link) => {
+                                    const isActive = isActivePath(pathname, link.href, home);
                                     return (
                                         <Link
                                             key={link.href}
@@ -126,9 +127,9 @@ export default function Navbar() {
                             </div>
 
                             <nav className="flex flex-col gap-2 flex-1 mt-6">
-                                {dashboardLinks.map((item, i) => {
+                                {links.map((item, i) => {
                                     const Icon = item.icon;
-                                    const isActive = pathname === item.href;
+                                    const isActive = isActivePath(pathname, item.href, home);
                                     return (
                                         <motion.div
                                             key={item.href}

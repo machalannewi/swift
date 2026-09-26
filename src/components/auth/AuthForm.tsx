@@ -24,6 +24,12 @@ interface AuthFormProps {
     onModeChange?: (mode: AuthMode) => void;
     onSuccess?: () => void;
     className?: string;
+    /** Where to go once signed in. */
+    redirectTo?: string;
+    /** Links used by the "Sign up" / "Log in" switch when not in the modal. */
+    signInHref?: string;
+    signUpHref?: string;
+    audience?: "rider" | "driver";
 }
 
 const getErrorMessage = (err: unknown) =>
@@ -36,6 +42,10 @@ export default function AuthForm({
     onModeChange,
     onSuccess,
     className,
+    redirectTo = "/dashboard",
+    signInHref = "/sign-in",
+    signUpHref = "/sign-up",
+    audience = "rider",
 }: AuthFormProps) {
     const {
         isLoaded: signUpLoaded,
@@ -64,7 +74,7 @@ export default function AuthForm({
 
     const finish = () => {
         onSuccess?.();
-        router.push("/dashboard");
+        router.push(redirectTo);
     };
 
     const switchMode = (next: AuthMode) => {
@@ -182,7 +192,7 @@ export default function AuthForm({
             await signIn.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/sso-callback",
-                redirectUrlComplete: "/dashboard",
+                redirectUrlComplete: redirectTo,
             });
         } catch (err) {
             setError(getErrorMessage(err));
@@ -197,8 +207,22 @@ export default function AuthForm({
         : "signin";
 
     const heading = {
-        signin: { title: "Welcome", accent: "back", sub: "Log in to book your next ride." },
-        signup: { title: "Create your", accent: "account", sub: "Join Swift and ride in minutes." },
+        signin: {
+            title: "Welcome",
+            accent: "back",
+            sub:
+                audience === "driver"
+                    ? "Log in to start taking trips."
+                    : "Log in to book your next ride.",
+        },
+        signup: {
+            title: audience === "driver" ? "Drive with" : "Create your",
+            accent: audience === "driver" ? "Swift" : "account",
+            sub:
+                audience === "driver"
+                    ? "Create your account, then tell us about your vehicle."
+                    : "Join Swift and ride in minutes.",
+        },
         verify: { title: "Check your", accent: "email", sub: `We sent a 6-digit code to ${emailAddress}.` },
     }[step];
 
@@ -257,7 +281,7 @@ export default function AuthForm({
                             <SwitchPrompt
                                 prompt="Don't have an account?"
                                 action="Sign up"
-                                href="/sign-up"
+                                href={signUpHref}
                                 onClick={onModeChange ? () => switchMode("signup") : undefined}
                             />
                         </form>
@@ -334,7 +358,7 @@ export default function AuthForm({
                             <SwitchPrompt
                                 prompt="Already have an account?"
                                 action="Log in"
-                                href="/sign-in"
+                                href={signInHref}
                                 onClick={onModeChange ? () => switchMode("signin") : undefined}
                             />
                         </form>

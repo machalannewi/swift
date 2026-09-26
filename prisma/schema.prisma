@@ -1,14 +1,117 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  RIDER
+  DRIVER
+  ADMIN
+}
+
+enum DriverStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum RideStatus {
+  REQUESTED
+  ACCEPTED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+/// Mirrors a Clerk user. Created lazily the first time they hit the app.
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String?
+  name      String?
+  imageUrl  String?
+  role      Role     @default(RIDER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driverProfile DriverProfile?
+  ridesAsRider  Ride[]         @relation("RiderRides")
+  ridesAsDriver Ride[]         @relation("DriverRides")
+  rideEvents    RideEvent[]
+}
+
+model DriverProfile {
+  id            String       @id @default(cuid())
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        DriverStatus @default(PENDING)
+  carTier       String
+  vehicleMake   String
+  vehicleModel  String
+  vehicleColor  String
+  plateNumber   String       @unique
+  licenseNumber String
+  phone         String
+  isOnline      Boolean      @default(false)
+  lastLat       Float?
+  lastLng       Float?
+  lastSeenAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status, isOnline, carTier])
+}
+
+model Ride {
+  id              String      @id @default(cuid())
+  riderId         String
+  rider           User        @relation("RiderRides", fields: [riderId], references: [id])
+  driverId        String?
+  driver          User?       @relation("DriverRides", fields: [driverId], references: [id])
+  status          RideStatus  @default(REQUESTED)
+  carTier         String
+  pickupName      String
+  pickupLat       Float
+  pickupLng       Float
+  dropoffName     String
+  dropoffLat      Float
+  dropoffLng      Float
+  distanceMeters  Int
+  durationSeconds Int
+  fare            Int
+  requestedAt     DateTime    @default(now())
+  acceptedAt      DateTime?
+  arrivedAt       DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelledBy     Role?
+  cancelReason    String?
+  updatedAt       DateTime    @updatedAt
+  events          RideEvent[]
+
+  @@index([status, carTier])
+  @@index([riderId, status])
+  @@index([driverId, status])
+}
+
+/// Append-only log of every ride state change - the source for admin analytics.
+model RideEvent {
+  id        String     @id @default(cuid())
+  rideId    String
+  ride      Ride       @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  status    RideStatus
+  actorId   String?
+  actor     User?      @relation(fields: [actorId], references: [id])
+  data      Json?
+  createdAt DateTime   @default(now())
+
+  @@index([rideId, createdAt])
+  @@index([status, createdAt])
 }

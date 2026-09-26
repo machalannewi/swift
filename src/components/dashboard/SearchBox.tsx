@@ -5,6 +5,7 @@ import { reverseGeocode } from "@/utils/mapbox";
 import CarOptions from "./CarOptions";
 import { RouteData } from "@/hooks/useMapboxRoute";
 import { AnimatePresence, motion } from "framer-motion";
+import { RideDTO } from "@/types/ride";
 
 interface SearchBoxProps {
     onPickupSelect: (place: MapboxFeature | null) => void;
@@ -13,6 +14,7 @@ interface SearchBoxProps {
     dropoff: MapboxFeature | null;
     route: RouteData | null;
     routeLoading: boolean;
+    onRideRequested: (ride: RideDTO) => void;
 }
 
 export default function SearchBox({
@@ -22,6 +24,7 @@ export default function SearchBox({
     dropoff,
     route,
     routeLoading,
+    onRideRequested,
 }: SearchBoxProps) {
     const [initialPickup, setInitialPickup] = useState<MapboxFeature | null>(
         null,
@@ -130,10 +133,11 @@ export default function SearchBox({
                         <CarOptions
                             // Reset the booking flow whenever the route changes
                             key={`${pickup.id}-${dropoff.id}`}
-                            pickupName={pickup.place_name}
-                            dropoffName={route.location || dropoff.place_name}
+                            pickup={pickup}
+                            dropoff={dropoff}
                             distance={route.distance}
                             duration={route.duration}
+                            onRequested={onRideRequested}
                         />
                     </motion.div>
                 )}
