@@ -132,6 +132,7 @@ swift/
 | `/admin/drivers`     | Driver approval queue and accounts           | Admin |
 | `/admin/drivers/[id]`| One driver: stats, current trip, trip history | Admin |
 | `/admin/riders`      | Search riders, see spend, suspend accounts   | Admin |
+| `/admin/pricing`     | Fare rates and surge per vehicle type, change history | Admin |
 
 ## Admin panel
 
@@ -159,6 +160,10 @@ Sign in once with the account you want to use (it can't be a driver account), th
   - Trips completed, distance, total and 7-day earnings, average pickup time, and driver cancellations (highlighted at 20%+ of accepted trips).
   - Their current trip (with cancel) and last 15 trips, plus a link to search all of their trips on the Rides page.
 - **Riders** (`/admin/riders`): search by name or email, see completed and cancelled rides and total spend, and suspend or reinstate accounts.
+- **Pricing** (`/admin/pricing`)
+  - Per vehicle type: base fare, per km, per minute, minimum fare and booking fee, with a live preview of what riders pay on short, medium and long trips.
+  - Manual surge: off, 1.2×, 1.5×, 1.8×, 2× or a custom value (up to 3×), with an optional reason shown to riders.
+  - Change history: every change with who made it, when, and the old → new values.
 
 Driver and rider names link between these pages, so you can move from a trip to the people involved and back.
 
@@ -179,4 +184,4 @@ Every status change is recorded in the `RideEvent` table, which powers the admin
 
 - **Driver approval**: new drivers start as `PENDING` and are approved in `/admin/drivers` (or with `npm run approve-driver -- driver@example.com`).
 - **Payments**: fares are paid in cash for now.
-- **Fares** are calculated as `baseFare + amountPerKm × distance`, using the car tiers in `src/utils/CarListData.ts`.
+- **Fares** are `max(minimum, (base + per km × distance + per minute × time) × surge) + booking fee`, using the rates set in `/admin/pricing` (stored in the `PricingTier` table; formula in `src/utils/pricing.ts`). Riders see the price upfront, it's locked when they request, and each ride stores its fare breakdown. If surge changes between the quote and the request, the rider is asked to review the new price.

@@ -10,7 +10,9 @@ import {
     rideInclude,
     serializeRide,
 } from "@/lib/rides";
-import { calculateFare, getCar } from "@/utils/CarListData";
+import { getCar } from "@/utils/CarListData";
+import { calculateFare } from "@/utils/pricing";
+import { getPricing } from "@/lib/pricing";
 import { readJson, requireCoords, requireString } from "@/lib/validate";
 
 // Rider requests a ride.
@@ -35,6 +37,18 @@ export const POST = handle(async (req: Request) => {
 
     const route = await getDrivingRoute(pickup, dropoff);
 
+    const pricing = await getPricing(car.tier);
+    if (!pricing) throw new HttpError(503, "This vehicle type isn't available right now");
+
+    // The rider saw a quote with a given surge; if surge changed since, ask them to review.
+    if (
+        typeof body.expectedSurge === "number" &&
+        Math.abs(body.expectedSurge - pricing.surgeMultiplier) > 0.001
+    ) {
+        throw new HttpError(409, "Prices just changed. Please review the new fare and request again.");
+    }
+    const fare = calculateFare(pricing, route.distanceMeters, route.durationSeconds);
+
     const ride = await prisma.ride.create({
         data: {
             riderId: rider.id,
@@ -47,7 +61,12 @@ export const POST = handle(async (req: Request) => {
             dropoffLng: dropoff.lng,
             distanceMeters: route.distanceMeters,
             durationSeconds: route.durationSeconds,
-            fare: calculateFare(car, route.distanceMeters),
+            fare: fare.total,
+            baseFare: fare.baseFare,
+            distanceFare: fare.distanceFare,
+            timeFare: fare.timeFare,
+            bookingFee: fare.bookingFee,
+            surgeMultiplier: fare.surgeMultiplier,
         },
         include: rideInclude,
     });

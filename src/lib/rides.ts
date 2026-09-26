@@ -200,6 +200,16 @@ export function serializeRide(ride: RideWithPeople) {
         distanceMeters: ride.distanceMeters,
         durationSeconds: ride.durationSeconds,
         fare: ride.fare,
+        fareBreakdown:
+            ride.baseFare != null
+                ? {
+                      baseFare: ride.baseFare,
+                      distanceFare: ride.distanceFare ?? 0,
+                      timeFare: ride.timeFare ?? 0,
+                      bookingFee: ride.bookingFee ?? 0,
+                      surgeMultiplier: ride.surgeMultiplier,
+                  }
+                : null,
         requestedAt: ride.requestedAt.toISOString(),
         acceptedAt: ride.acceptedAt?.toISOString() ?? null,
         completedAt: ride.completedAt?.toISOString() ?? null,

@@ -1,5 +1,6 @@
-import { ArrowLeft, CarFront, User } from "lucide-react";
-import { carListData, CarData, calculateFare, formatNaira } from "@/utils/CarListData";
+import { ArrowLeft, CarFront, User, Zap } from "lucide-react";
+import { carListData, CarData, formatNaira } from "@/utils/CarListData";
+import { calculateFare, isSurging, type FareBreakdown } from "@/utils/pricing";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
@@ -8,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { MapboxFeature } from "@/types/mapbox";
 import { RideDTO } from "@/types/ride";
 import { api } from "@/lib/api-client";
+import { usePricing } from "@/hooks/usePricing";
 
 interface CarOptionsProps {
     distance: number;
@@ -36,28 +38,56 @@ export default function CarOptions({
     const [step, setStep] = useState<Step>("select");
     const [isRequesting, setIsRequesting] = useState(false);
     const [error, setError] = useState("");
+    const { pricing, forTier, reload, error: pricingError } = usePricing();
 
     const distanceInKm = distance / 1000;
     const durationInMin = Math.max(1, Math.round(duration / 60));
 
+    // Only tiers with live pricing can be booked.
+    const cars = carListData
+        .map((car) => {
+            const p = forTier(car.tier);
+            return p ? { car, pricing: p, quote: calculateFare(p, distance, duration) } : null;
+        })
+        .filter((c) => c !== null);
+
+    const selected = cars.find((c) => c.car.id === selectedCar?.id) ?? null;
+
     const requestRide = async (): Promise<void> => {
-        if (!selectedCar) return;
+        if (!selected) return;
         setIsRequesting(true);
         setError("");
         try {
             const { ride } = await api<{ ride: RideDTO }>("/api/rides", {
                 body: {
-                    carTier: selectedCar.tier,
+                    carTier: selected.car.tier,
                     pickup: toPlace(pickup),
                     dropoff: toPlace(dropoff),
+                    expectedSurge: selected.pricing.surgeMultiplier,
                 },
             });
             onRequested(ride);
         } catch (err) {
+            // Prices may have changed since the quote - show the new ones.
+            await reload();
             setError(err instanceof Error ? err.message : "Could not request a ride");
             setIsRequesting(false);
         }
     };
+
+    if (!pricing) {
+        return (
+            <div className="mt-6 flex flex-col gap-3">
+                {pricingError ? (
+                    <p className="text-sm text-red-400">{pricingError}</p>
+                ) : (
+                    Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-20 rounded-2xl bg-neutral-800 animate-pulse" />
+                    ))
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="mt-6">
@@ -77,7 +107,7 @@ export default function CarOptions({
                         </div>
 
                         <div className="mt-4 flex flex-col gap-3">
-                            {carListData.map((car, index) => {
+                            {cars.map(({ car, pricing: p, quote }, index) => {
                                 const isSelected = selectedCar?.id === car.id;
                                 return (
                                     <motion.button
@@ -115,37 +145,43 @@ export default function CarOptions({
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p
-                                                className={twMerge(
-                                                    "font-medium text-lg",
-                                                    isSelected && "text-lime-400",
-                                                )}
-                                            >
-                                                {formatNaira(calculateFare(car, distance))}
+                                            <p className={twMerge("font-medium text-lg", isSelected && "text-lime-400")}>
+                                                {formatNaira(quote.total)}
                                             </p>
-                                            <p className="text-xs text-white/40">
-                                                ₦{car.amountPerKm}/km
-                                            </p>
+                                            {isSurging(p) ? (
+                                                <SurgeBadge multiplier={p.surgeMultiplier} />
+                                            ) : (
+                                                <p className="text-xs text-white/40">Upfront price</p>
+                                            )}
                                         </div>
                                     </motion.button>
                                 );
                             })}
                         </div>
 
+                        {selected && isSurging(selected.pricing) && (
+                            <p className="mt-4 text-sm text-white/60 flex items-start gap-2">
+                                <Zap size={16} className="text-pink-400 mt-0.5 flex-shrink-0" />
+                                Fares for {selected.car.name} are higher right now
+                                {selected.pricing.surgeNote ? ` (${selected.pricing.surgeNote.toLowerCase()})` : ""}{" "}
+                                because demand is high.
+                            </p>
+                        )}
+
                         <Button
                             variant="primary"
                             className="w-full mt-6"
-                            disabled={!selectedCar}
+                            disabled={!selected}
                             onClick={() => setStep("review")}
                         >
-                            {selectedCar
-                                ? `Continue with ${selectedCar.name} · ${formatNaira(calculateFare(selectedCar, distance))}`
+                            {selected
+                                ? `Continue with ${selected.car.name} · ${formatNaira(selected.quote.total)}`
                                 : "Select a ride"}
                         </Button>
                     </motion.div>
                 )}
 
-                {step === "review" && selectedCar && (
+                {step === "review" && selected && (
                     <motion.div
                         key="review"
                         initial={{ opacity: 0, x: 20 }}
@@ -155,7 +191,10 @@ export default function CarOptions({
                         <button
                             type="button"
                             className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-lime-400 transition"
-                            onClick={() => setStep("select")}
+                            onClick={() => {
+                                setError("");
+                                setStep("select");
+                            }}
                             disabled={isRequesting}
                         >
                             <ArrowLeft size={16} /> Back to rides
@@ -165,16 +204,18 @@ export default function CarOptions({
                             <TripSummary pickup={pickup.place_name} dropoff={dropoff.place_name} />
 
                             <div className="mt-5 pt-5 border-t border-white/10 flex flex-col gap-2 text-sm">
-                                <Row label="Vehicle" value={selectedCar.name} />
-                                <Row label="Distance" value={`${distanceInKm.toFixed(2)} km`} />
-                                <Row label="Est. trip time" value={`${durationInMin} min`} />
-                                <Row label="Base fare" value={formatNaira(selectedCar.baseFare)} />
+                                <Row label="Vehicle" value={selected.car.name} />
+                                <FareBreakdownRows
+                                    fare={selected.quote}
+                                    distanceKm={distanceInKm}
+                                    minutes={durationInMin}
+                                />
                             </div>
 
                             <div className="mt-5 pt-5 border-t border-white/10 flex justify-between items-baseline">
                                 <span className="text-white/50">Total</span>
                                 <span className="text-3xl font-medium text-lime-400">
-                                    {formatNaira(calculateFare(selectedCar, distance))}
+                                    {formatNaira(selected.quote.total)}
                                 </span>
                             </div>
                         </div>
@@ -191,12 +232,52 @@ export default function CarOptions({
                             onClick={requestRide}
                             disabled={isRequesting}
                         >
-                            {isRequesting ? <Spinner /> : `Request ${selectedCar.name}`}
+                            {isRequesting ? <Spinner /> : `Request ${selected.car.name}`}
                         </Button>
+                        <p className="mt-3 text-xs text-white/40 text-center">
+                            This price is locked in when you request.
+                        </p>
                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export function SurgeBadge({ multiplier }: { multiplier: number }) {
+    return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 px-2 py-0.5 text-xs font-semibold text-neutral-950">
+            <Zap size={11} /> {multiplier.toFixed(1)}×
+        </span>
+    );
+}
+
+/** Line items that add up to the fare. */
+export function FareBreakdownRows({
+    fare,
+    distanceKm,
+    minutes,
+}: {
+    fare: Pick<FareBreakdown, "baseFare" | "distanceFare" | "timeFare" | "bookingFee" | "surgeMultiplier"> &
+        Partial<Pick<FareBreakdown, "surgeAmount" | "minimumTopUp">>;
+    distanceKm: number;
+    minutes: number;
+}) {
+    const rideFare = fare.baseFare + fare.distanceFare + fare.timeFare;
+    const surgeAmount = fare.surgeAmount ?? Math.round(rideFare * fare.surgeMultiplier) - rideFare;
+    return (
+        <>
+            <Row label="Base fare" value={formatNaira(fare.baseFare)} />
+            <Row label={`Distance · ${distanceKm.toFixed(1)} km`} value={formatNaira(fare.distanceFare)} />
+            {fare.timeFare > 0 && <Row label={`Time · ${minutes} min`} value={formatNaira(fare.timeFare)} />}
+            {surgeAmount > 0 && (
+                <Row label={`High demand · ${fare.surgeMultiplier.toFixed(1)}×`} value={`+${formatNaira(surgeAmount)}`} />
+            )}
+            {(fare.minimumTopUp ?? 0) > 0 && (
+                <Row label="Minimum fare adjustment" value={`+${formatNaira(fare.minimumTopUp!)}`} />
+            )}
+            {fare.bookingFee > 0 && <Row label="Booking fee" value={formatNaira(fare.bookingFee)} />}
+        </>
     );
 }
 

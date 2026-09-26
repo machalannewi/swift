@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CarFront, Check, Phone, X } from "lucide-react";
 import Button from "@/components/Button";
 import { Spinner } from "@/components/ui/spinner";
-import { TripSummary, Row } from "./CarOptions";
+import { TripSummary, Row, FareBreakdownRows } from "./CarOptions";
 import { api } from "@/lib/api-client";
 import { formatNaira, getCar } from "@/utils/CarListData";
 import type { RideDTO } from "@/types/ride";
@@ -109,8 +109,33 @@ export default function ActiveRidePanel({
                 <TripSummary pickup={ride.pickup.name} dropoff={ride.dropoff.name} />
                 <div className="mt-5 pt-5 border-t border-white/10 flex flex-col gap-2 text-sm">
                     <Row label="Vehicle" value={carName} />
-                    <Row label="Distance" value={`${(ride.distanceMeters / 1000).toFixed(1)} km`} />
-                    <Row label="Fare" value={formatNaira(ride.fare)} />
+                    {ride.fareBreakdown ? (
+                        <FareBreakdownRows
+                            fare={{
+                                ...ride.fareBreakdown,
+                                // Whatever the parts don't cover came from the minimum fare.
+                                minimumTopUp: Math.max(
+                                    0,
+                                    ride.fare -
+                                        ride.fareBreakdown.bookingFee -
+                                        Math.round(
+                                            (ride.fareBreakdown.baseFare +
+                                                ride.fareBreakdown.distanceFare +
+                                                ride.fareBreakdown.timeFare) *
+                                                ride.fareBreakdown.surgeMultiplier,
+                                        ),
+                                ),
+                            }}
+                            distanceKm={ride.distanceMeters / 1000}
+                            minutes={Math.max(1, Math.round(ride.durationSeconds / 60))}
+                        />
+                    ) : (
+                        <Row label="Distance" value={`${(ride.distanceMeters / 1000).toFixed(1)} km`} />
+                    )}
+                    <div className="flex justify-between gap-4 pt-2 mt-1 border-t border-white/10">
+                        <span className="text-white/50">Total</span>
+                        <span className="font-medium text-lime-400">{formatNaira(ride.fare)}</span>
+                    </div>
                 </div>
             </div>
 

@@ -23,6 +23,14 @@ export interface RideDTO {
     distanceMeters: number;
     durationSeconds: number;
     fare: number;
+    /** Null for rides booked before pricing settings existed. */
+    fareBreakdown: {
+        baseFare: number;
+        distanceFare: number;
+        timeFare: number;
+        bookingFee: number;
+        surgeMultiplier: number;
+    } | null;
     requestedAt: string;
     acceptedAt: string | null;
     completedAt: string | null;

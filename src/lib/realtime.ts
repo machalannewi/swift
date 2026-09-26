@@ -5,6 +5,8 @@ export const channels = {
     user: (userId: string) => `private-user-${userId}`,
     /** All approved drivers of a car tier: requests that are no longer open. */
     driverTier: (tier: string) => `private-drivers-${tier}`,
+    /** Public: fares changed (rates or surge) - riders refresh their quotes. */
+    pricing: "pricing",
     /** Admins only: every ride and driver change across the platform. */
     admin: "private-admin",
     /** Everything about one ride: status changes and live driver location. */
@@ -20,6 +22,7 @@ export const events = {
     driverUpdated: "driver:updated",
     /** The user's own account changed (approval, suspension) - reload. */
     accountUpdated: "account:updated",
+    pricingUpdated: "pricing:updated",
 } as const;
 
 export type DriverLocationEvent = { lat: number; lng: number; at: string };

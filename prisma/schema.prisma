@@ -42,10 +42,39 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt DateTime @updatedAt
 
-  driverProfile DriverProfile?
-  ridesAsRider  Ride[]         @relation("RiderRides")
-  ridesAsDriver Ride[]         @relation("DriverRides")
-  rideEvents    RideEvent[]
+  driverProfile  DriverProfile?
+  ridesAsRider   Ride[]          @relation("RiderRides")
+  ridesAsDriver  Ride[]          @relation("DriverRides")
+  rideEvents     RideEvent[]
+  pricingChanges PricingChange[]
+}
+
+/// Live fare settings for one car tier, edited in /admin/pricing.
+model PricingTier {
+  tier            String   @id
+  baseFare        Int
+  perKm           Int
+  perMinute       Int
+  minimumFare     Int
+  bookingFee      Int      @default(0)
+  /// 1 = no surge. Applied to base + distance + time, not the booking fee.
+  surgeMultiplier Float    @default(1)
+  /// Optional reason shown to riders while surge is on, e.g. "Heavy rain".
+  surgeNote       String?
+  updatedAt       DateTime @updatedAt
+}
+
+/// Audit trail of every pricing change.
+model PricingChange {
+  id          String   @id @default(cuid())
+  tier        String
+  changedById String
+  changedBy   User     @relation(fields: [changedById], references: [id])
+  before      Json
+  after       Json
+  createdAt   DateTime @default(now())
+
+  @@index([tier, createdAt])
 }
 
 model DriverProfile {
@@ -87,6 +116,12 @@ model Ride {
   distanceMeters  Int
   durationSeconds Int
   fare            Int
+  // How the fare was built (null on rides from before pricing settings existed)
+  baseFare        Int?
+  distanceFare    Int?
+  timeFare        Int?
+  bookingFee      Int?
+  surgeMultiplier Float       @default(1)
   requestedAt     DateTime    @default(now())
   acceptedAt      DateTime?
   arrivedAt       DateTime?
