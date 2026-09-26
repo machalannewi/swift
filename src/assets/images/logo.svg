@@ -1,0 +1,15 @@
+<svg width="132" height="48" viewBox="0 0 132 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Mark: layered lime tiles with fast-forward chevrons -->
+<rect x="7" y="9" width="37" height="37" rx="11" fill="#A3E635" fill-opacity="0.5"/>
+<rect x="0" y="2" width="37" height="37" rx="11" fill="#A3E635"/>
+<path d="M10.5 13L18 20.5L10.5 28M19.5 13L27 20.5L19.5 28" stroke="#0A0A0A" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Wordmark: swift -->
+<g stroke="white" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round">
+<path d="M67 20.6C65.6 18.9 63.7 18 61.8 18C58.8 18 56.9 19.7 56.9 22.1C56.9 27.5 67.5 24.7 67.5 29.9C67.5 32.4 65.4 34 62.3 34C59.9 34 57.9 33 56.5 31.3"/>
+<path d="M73 18L77.8 34L83 21.6L88.2 34L93 18"/>
+<path d="M99 18V34"/>
+<path d="M114 11.2C113.1 10.4 112 10 110.9 10C108.5 10 107 11.7 107 14.3V34M103.5 19.5H113"/>
+<path d="M121.5 12V29.4C121.5 32.4 123 34 125.6 34C126.3 34 127 33.9 127.6 33.6M118 19.5H127"/>
+</g>
+<circle cx="99" cy="11.2" r="2.7" fill="white"/>
+</svg>
