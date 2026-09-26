@@ -39,27 +39,17 @@ export function useMapboxAutocomplete(
                     throw new Error('Mapbox token is not configured');
                 }
 
-                let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&autocomplete=true&limit=5`;
-                
+                let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&autocomplete=true&limit=6`;
+
+                // Rank nearby places first, but still search the whole country
+                // (no bounding box), so e.g. "Lagos" works from anywhere.
                 if (userLocation) {
-                    // Add proximity to bias towards user location
                     url += `&proximity=${userLocation[0]},${userLocation[1]}`;
-                    
-                    // Add bounding box - restrict to ~50km radius
-                    const offset = 0.5;
-                    const bbox = [
-                        userLocation[0] - offset,
-                        userLocation[1] - offset,
-                        userLocation[0] + offset,
-                        userLocation[1] + offset
-                    ].join(',');
-                    url += `&bbox=${bbox}`;
                 }
-                
-                // Add country filter if available
-                if (userCountry) {
-                    url += `&country=${userCountry}`;
-                }
+
+                // Stay within the rider's country; Swift operates in Nigeria,
+                // so use that until the rider's location is known.
+                url += `&country=${userCountry ?? 'ng'}`;
 
                 const response = await fetch(url, { 
                     signal: abortControllerRef.current!.signal 
