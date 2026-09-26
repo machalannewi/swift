@@ -2,8 +2,8 @@
 
 import Button from "@/components/Button";
 import Pointer from "@/components/Pointer";
-import heroDesign from "@/assets/images/design-example-1.png";
-import heroDesign2 from "@/assets/images/design-example-2.png";
+import heroDesign from "@/assets/images/hero-image.png";
+import heroDesign2 from "@/assets/images/hero-image2.png";
 import Image from "next/image";
 import { easeInOut, motion, useAnimate } from "framer-motion";
 import { useEffect } from "react";
@@ -95,7 +95,7 @@ export default function Hero() {
                     className="absolute -left-32 top-10 hidden lg:block"
                 >
                     <Image
-                        src={heroDesign}
+                        src={heroDesign2}
                         draggable="false"
                         alt="hero design 1"
                     />
@@ -115,10 +115,10 @@ export default function Hero() {
                     drag
                     ref={rightDesignScope}
                     initial={{ opacity: 0, x: 100, y: 100 }}
-                    className="absolute -right-64 -top-16 hidden lg:block"
+                    className="absolute -right-36 -top-16 hidden lg:block"
                 >
                     <Image
-                        src={heroDesign2}
+                        src={heroDesign}
                         draggable="false"
                         alt="hero design 2"
                     />

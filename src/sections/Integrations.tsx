@@ -1,42 +1,36 @@
 import Tag from "@/components/Tag";
-import figmaIcon from "@/assets/images/figma-logo.svg";
-import notionIcon from "@/assets/images/notion-logo.svg";
-import slackIcon from "@/assets/images/slack-logo.svg";
-import relumeIcon from "@/assets/images/relume-logo.svg";
-import framerIcon from "@/assets/images/framer-logo.svg";
-import githubIcon from "@/assets/images/github-logo.svg";
-import IntegrationColumn from "@/components/IntegrationColumn";
+import IntegrationColumn, { type FleetIcon } from "@/components/IntegrationColumn";
 
 const integrations = [
     {
         name: "Economy",
-        icon: figmaIcon,
+        icon: "economy" as FleetIcon,
         description: "Affordable rides for everyday travel.",
     },
     {
         name: "Comfort",
-        icon: notionIcon,
+        icon: "comfort" as FleetIcon,
         description:
             "Extra space and premium features for a better experience.",
     },
     {
         name: "Premium",
-        icon: slackIcon,
+        icon: "premium" as FleetIcon,
         description: "Luxury vehicles for special occasions.",
     },
     {
         name: "XL",
-        icon: relumeIcon,
+        icon: "xl" as FleetIcon,
         description: "Spacious rides for groups up to 6 passengers.",
     },
     {
         name: "Green",
-        icon: framerIcon,
+        icon: "green" as FleetIcon,
         description: "Eco-friendly electric and hybrid vehicles.",
     },
     {
         name: "Accessible",
-        icon: githubIcon,
+        icon: "accessible" as FleetIcon,
         description: "Wheelchair-accessible vehicles for all riders.",
     },
 ];
